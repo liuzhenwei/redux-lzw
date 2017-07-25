@@ -70,7 +70,7 @@ function promiseData(source){
  * @return {string || object}        如果returnErrorType为true，则同时返回success和error2个type名 
  */
 export function getActionType(key, returnErrorType){
-	var successType = key + '_action', errorType = successType + '_error';
+	var successType = 'action_' + key, errorType = successType + '_error';
 	return returnErrorType ? {successType, errorType} : successType;
 }
 
