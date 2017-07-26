@@ -313,7 +313,7 @@ export function createStores(list, otherReducers){
 	return Object.keys(list).reduce(function(ret, itemName){
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig) && list[itemName].store === false ){
+		if (Array.isArray(reducersConfig) && list[itemName].store !== false ){
 			var reducers = merge(createReducer(reducersConfig, itemName), otherReducers || {});
 			ret[itemName] = reducersToStore(reducers);
 			return ret;
