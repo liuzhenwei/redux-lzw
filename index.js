@@ -1,8 +1,8 @@
-import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
-import { connect } from 'react-redux';
+import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
+import {connect} from 'react-redux';
 import thunk from 'redux-thunk';
 import promise from 'redux-promise';
-import Immutable, { Map, List } from 'immutable';
+import Immutable, {Map, List} from 'immutable';
 
 export function isFunction(obj) {
 	return Object.prototype.toString.call(obj) === '[object Function]';
@@ -16,34 +16,33 @@ export function isPlainObject(obj) {
  * @param  {object} target
  * @return {object}
  */
-export function merge(target){
+export function merge(firstObj) {
 	function extend(target, source, deep) {
 		for (var key in source) {
 			if (deep && (isPlainObject(source[key]) || (Array.isArray(source[key]) && source[key].length > 0))) {
-				if (isPlainObject(source[key]) && !isPlainObject(target[key])){
+				if (isPlainObject(source[key]) && !isPlainObject(target[key])) {
 					target[key] = {};
 				}
-				if (Array.isArray(source[key]) && !Array.isArray(target[key])){
+				if (Array.isArray(source[key]) && !Array.isArray(target[key])) {
 					target[key] = [];
 				}
 				extend(target[key], source[key], deep);
-			}
-			else if (source[key] !== undefined) target[key] = source[key];
+			} else if (source[key] !== undefined) target[key] = source[key];
 		}
-		if( Array.isArray(source) && deep && deep !== 'merge' ){
+		if (Array.isArray(source) && deep && deep !== 'merge') {
 			target.length = source.length;
 		}
 	}
 
-	var deep = true, args = Array.prototype.slice.call(arguments, 1);
-	if (typeof target == 'boolean' || target == 'merge') {
-		deep = target;
-		target = args.shift();
+	var deep = true, objs = Array.prototype.slice.call(arguments, 1);
+	if (typeof firstObj == 'boolean' || firstObj == 'merge') {
+		deep = firstObj;
+		firstObj = objs.shift();
 	}
-	args.forEach(function(arg){
-		extend(target, arg, deep);
+	objs.forEach(function(obj) {
+		extend(firstObj, obj, deep);
 	});
-	return target;
+	return firstObj;
 }
 
 /**
@@ -51,10 +50,10 @@ export function merge(target){
  * @param  {array || object} source     promise返回的数据
  * @return {object}
  */
-function promiseData(source){
+function promiseData(source) {
 	var data = {};
-	if( Array.isArray(source) ){
-		source.forEach(function(_data){
+	if (Array.isArray(source)) {
+		source.forEach(function(_data) {
 			data = merge(data, _data);
 		});
 	} else {
@@ -69,7 +68,7 @@ function promiseData(source){
  * @param  {boolean} returnErrorType 是否同时返回错误type名
  * @return {string || object}        如果returnErrorType为true，则同时返回success和error2个type名 
  */
-export function getActionType(key, returnErrorType){
+export function getActionType(key, returnErrorType) {
 	var successType = 'action_' + key, errorType = successType + '_error';
 	return returnErrorType ? {successType, errorType} : successType;
 }
@@ -80,7 +79,7 @@ export function getActionType(key, returnErrorType){
  * @param  {object} data action的数据
  * @return {object}
  */
-function actionData(type, data){
+function actionData(type, data) {
 	return {type, data};
 }
 
@@ -91,20 +90,20 @@ function actionData(type, data){
  * @param  {function}   Service        用于异步处理action数据的方法
  * @return {function}
  */
-export function asyncAction(ACTION_TYPE, ERROR_TYPE, service){
-	return function(...param){
-		return function(dispatch){
-			var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve){
+export function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
+	return function(...param) {
+		return function(dispatch) {
+			var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
 				resolve({param});
 			})];
-			if( ! Array.isArray(promises) ){
+			if (!Array.isArray(promises)) {
 				promises = [promises];
 			}
 			return Promise.all(promises)
-				.then(function(pageData){
+				.then(function(pageData) {
 					return dispatch(actionData(ACTION_TYPE, promiseData(pageData)));
 				})
-				.catch(function(error){
+				.catch(function(error) {
 					console.error(error);
 					dispatch(actionData(ERROR_TYPE, error));
 					return false;
@@ -120,8 +119,8 @@ export function asyncAction(ACTION_TYPE, ERROR_TYPE, service){
  * @param  {function}   Service        可选的，用于处理action数据的方法
  * @return {function}
  */
-export function baseAction(ACTION_TYPE, ERROR_TYPE, service){
-	return function(param){
+export function baseAction(ACTION_TYPE, ERROR_TYPE, service) {
+	return function(param) {
 		return isFunction(service) ? actionData(ACTION_TYPE, service(param)) : actionData(ACTION_TYPE, param);
 	};
 }
@@ -146,9 +145,9 @@ export function createAction(reducersConfig, itemName, service) {
 		var reducerName = reducerConfig.name || itemName;
 
 		// 如果没有定义actions，则创建一个默认的actions
-		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : {[reducerName]: {}};
+		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : {[reducerName]: {service: service['defaultService'] || null}};
 
-		var actions = Object.keys(actionsConfig).reduce(function(actionRet, actionName){
+		var actions = Object.keys(actionsConfig).reduce(function(actionRet, actionName) {
 			var actionConfig = actionsConfig[actionName];
 			var actionFunc = actionConfig.mode != 'base' ? asyncAction : baseAction;
 			var {successType, errorType} = getActionType(actionName, true);
@@ -160,7 +159,7 @@ export function createAction(reducersConfig, itemName, service) {
 
 			var actionService = isFunction(actionConfig.service) ? actionConfig.service : null;
 			// 如果在action配置中没有定义service，则尝试使用外部的Service
-			if (actionService == null){
+			if (actionService == null) {
 				if (isFunction(service[successType])) {
 					actionService = service[successType];
 				} else if (isFunction(service[actionName])) {
@@ -183,11 +182,11 @@ export function createAction(reducersConfig, itemName, service) {
  * @param  {object}  service   用于处理action的方法集合
  * @return {object}            action集合
  */
-export function createActions(list, service){
-	return Object.keys(list).reduce(function(ret, itemName){
+export function createActions(list, service) {
+	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig) ){
+		if (Array.isArray(reducersConfig)) {
 			return merge(ret, createAction(reducersConfig, itemName, service));
 		}
 
@@ -276,11 +275,11 @@ export function createReducer(reducersConfig, itemName) {
  * @param  {array}    list           配置列表
  * @return {object}                  reducer集合
  */
-export function createReducers(list){
-	return Object.keys(list).reduce(function(ret, itemName){
+export function createReducers(list) {
+	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig) ){
+		if (Array.isArray(reducersConfig)) {
 			return merge(ret, createReducer(reducersConfig, itemName));
 		}
 
@@ -293,13 +292,13 @@ export function createReducers(list){
  * @param  {object} reducers reducer集合
  * @return {store}
  */
-export function reducersToStore(reducers){
+export function reducersToStore(reducers) {
 	var Reducers = combineReducers(reducers);
-	var initialState = typeof(window) != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
+	var initialState = typeof window != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
 
 	return createStore(Reducers, initialState, compose(
 		applyMiddleware(thunk, promise),
-		typeof(window) != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : f => f
+		typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : f => f
 	));
 }
 
@@ -309,11 +308,11 @@ export function reducersToStore(reducers){
  * @param  {object}   otherReducers  可选的，额外附加的reducer函数集合
  * @return {object}                  store集合
  */
-export function createStores(list, otherReducers){
-	return Object.keys(list).reduce(function(ret, itemName){
+export function createStores(list, otherReducers) {
+	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig) && list[itemName].store !== false ){
+		if (Array.isArray(reducersConfig) && list[itemName].store !== false) {
 			var reducers = merge(createReducer(reducersConfig, itemName), otherReducers || {});
 			ret[itemName] = reducersToStore(reducers);
 			return ret;
@@ -326,16 +325,18 @@ export function createStores(list, otherReducers){
 /**
  * 连接redux和react组件，使react组件可以响应redux中的数据
  * @param  {react}   Component  react组件
- * @param  {string}  dataName   可选的，绑定的数据名称
+ * @param  {string}  propName   绑定的数据名称
  * @param  {object}  Actions    要链接的action
+ * @param  {string}  stateKey   需要返回的state的key
  * @return {react}              绑定redux后的react组件
  */
-export function connectStateData(Component, dataName, Actions){
-	dataName = dataName || 'componentData';
-	function mapStateToProps(data){
-		return {[dataName]: data};
+export function connectStateData(Component, propName, Actions, stateKey) {
+	stateKey = stateKey || '__';
+	function mapStateToProps(state) {
+		var stateData = state[stateKey] || state;
+		return {[propName]: stateData};
 	}
-	if( isPlainObject(Actions) ){
+	if (isPlainObject(Actions)) {
 		return connect(mapStateToProps, Actions)(Component);
 	} else {
 		return connect(mapStateToProps)(Component);
