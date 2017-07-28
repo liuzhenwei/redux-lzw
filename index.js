@@ -101,12 +101,14 @@ export function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 			}
 			return Promise.all(promises)
 				.then(function(pageData) {
-					return dispatch(actionData(ACTION_TYPE, promiseData(pageData)));
+					var data = promiseData(pageData);
+					dispatch(actionData(ACTION_TYPE, data));
+					return data;
 				})
 				.catch(function(error) {
 					console.error(error);
 					dispatch(actionData(ERROR_TYPE, error));
-					return false;
+					return error;
 				});
 		};
 	};
@@ -145,10 +147,14 @@ export function createAction(reducersConfig, itemName, service) {
 		var reducerName = reducerConfig.name || itemName;
 
 		// 如果没有定义actions，则创建一个默认的actions
-		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : {[reducerName]: {service: service['defaultService'] || null}};
+		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : {[reducerName]: {}};
 
 		var actions = Object.keys(actionsConfig).reduce(function(actionRet, actionName) {
-			var actionConfig = actionsConfig[actionName];
+			var actionConfig = actionsConfig[actionName] == true ? {} : actionsConfig[actionName];
+			if (!isPlainObject(actionConfig)) {
+				return actionRet;
+			}
+
 			var actionFunc = actionConfig.mode != 'base' ? asyncAction : baseAction;
 			var {successType, errorType} = getActionType(actionName, true);
 
@@ -164,6 +170,8 @@ export function createAction(reducersConfig, itemName, service) {
 					actionService = service[successType];
 				} else if (isFunction(service[actionName])) {
 					actionService = service[actionName];
+				} else {
+					actionService = service['defaultService'] || null;
 				}
 			}
 

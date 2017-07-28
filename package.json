@@ -1,6 +1,6 @@
 {
   "name": "redux-lzw",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "redux function",
   "main": "index.js",
   "scripts": {
