@@ -1,6 +1,6 @@
 {
   "name": "redux-lzw",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "redux function",
   "main": "index.js",
   "scripts": {
@@ -13,8 +13,8 @@
   "license": "MIT",
   "dependencies": {
     "immutable": "^3.8.1",
-    "react-redux": "^5.0.5",
-    "redux": "^3.7.2",
+    "react-redux": "^4.4.5",
+    "redux": "^3.5.2",
     "redux-promise": "^0.5.3",
     "redux-thunk": "^2.2.0"
   }
