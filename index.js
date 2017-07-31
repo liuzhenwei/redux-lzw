@@ -118,7 +118,7 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 				.catch(function(error) {
 					console.error(error);
 					dispatch(actionData(ERROR_TYPE, error));
-					return error;
+					return {error: error};
 				});
 		};
 	};
