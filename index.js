@@ -4,8 +4,8 @@ var createStore = redux.createStore,
 	applyMiddleware = redux.applyMiddleware,
 	compose = redux.compose;
 var connect = require('react-redux').connect;
-var thunk = require('redux-thunk');
-var promise = require('redux-promise');
+var reduxThunk = require('redux-thunk');
+var reduxPromise = require('redux-promise');
 var Immutable = require('immutable');
 var Map = Immutable.Map,
 	List = Immutable.List;
@@ -315,7 +315,7 @@ function reducersToStore(reducers) {
 	var initialState = typeof window != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
 
 	return createStore(Reducers, initialState, compose(
-		applyMiddleware(thunk, promise),
+		applyMiddleware(reduxThunk.default, reduxPromise),
 		typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : f => f
 	));
 }
