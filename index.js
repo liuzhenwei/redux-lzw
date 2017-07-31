@@ -9,7 +9,7 @@ var promise = require('redux-promise');
 var Immutable = require('immutable');
 var Map = Immutable.Map,
 	List = Immutable.List;
-var Promise = require('es-promise').Promise;
+var Promise = require('es6-promise').Promise;
 
 function isArray(obj) {
 	return Object.prototype.toString.call(obj) === '[object Array]';
