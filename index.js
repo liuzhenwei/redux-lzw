@@ -1,13 +1,23 @@
-import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
-import {connect} from 'react-redux';
-import thunk from 'redux-thunk';
-import promise from 'redux-promise';
-import Immutable, {Map, List} from 'immutable';
+var redux = require('redux');
+var createStore = redux.createStore,
+	combineReducers = redux.combineReducers,
+	applyMiddleware = redux.applyMiddleware,
+	compose = redux.compose;
+var connect = require('react-redux').connect;
+var thunk = require('redux-thunk');
+var promise = require('redux-promise');
+var Immutable = require('immutable');
+var Map = Immutable.Map,
+	List = Immutable.List;
+var Promise = require('es-promise').Promise;
 
-export function isFunction(obj) {
+function isArray(obj) {
+	return Object.prototype.toString.call(obj) === '[object Array]';
+}
+function isFunction(obj) {
 	return Object.prototype.toString.call(obj) === '[object Function]';
 }
-export function isPlainObject(obj) {
+function isPlainObject(obj) {
 	return Object.prototype.toString.call(obj) === '[object Object]' && Object.getPrototypeOf(obj) == Object.prototype;
 }
 
@@ -16,20 +26,20 @@ export function isPlainObject(obj) {
  * @param  {object} target
  * @return {object}
  */
-export function merge(firstObj) {
+function merge(firstObj) {
 	function extend(target, source, deep) {
 		for (var key in source) {
-			if (deep && (isPlainObject(source[key]) || (Array.isArray(source[key]) && source[key].length > 0))) {
+			if (deep && (isPlainObject(source[key]) || (isArray(source[key]) && source[key].length > 0))) {
 				if (isPlainObject(source[key]) && !isPlainObject(target[key])) {
 					target[key] = {};
 				}
-				if (Array.isArray(source[key]) && !Array.isArray(target[key])) {
+				if (isArray(source[key]) && !isArray(target[key])) {
 					target[key] = [];
 				}
 				extend(target[key], source[key], deep);
 			} else if (source[key] !== undefined) target[key] = source[key];
 		}
-		if (Array.isArray(source) && deep && deep !== 'merge') {
+		if (isArray(source) && deep && deep !== 'merge') {
 			target.length = source.length;
 		}
 	}
@@ -52,7 +62,7 @@ export function merge(firstObj) {
  */
 function promiseData(source) {
 	var data = {};
-	if (Array.isArray(source)) {
+	if (isArray(source)) {
 		source.forEach(function(_data) {
 			data = merge(data, _data);
 		});
@@ -68,7 +78,7 @@ function promiseData(source) {
  * @param  {boolean} returnErrorType 是否同时返回错误type名
  * @return {string || object}        如果returnErrorType为true，则同时返回success和error2个type名 
  */
-export function getActionType(key, returnErrorType) {
+function getActionType(key, returnErrorType) {
 	var successType = 'action_' + key, errorType = successType + '_error';
 	return returnErrorType ? {successType, errorType} : successType;
 }
@@ -90,13 +100,13 @@ function actionData(type, data) {
  * @param  {function}   Service        用于异步处理action数据的方法
  * @return {function}
  */
-export function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
+function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 	return function(...param) {
 		return function(dispatch) {
 			var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
 				resolve({param});
 			})];
-			if (!Array.isArray(promises)) {
+			if (!isArray(promises)) {
 				promises = [promises];
 			}
 			return Promise.all(promises)
@@ -121,7 +131,7 @@ export function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
  * @param  {function}   Service        可选的，用于处理action数据的方法
  * @return {function}
  */
-export function baseAction(ACTION_TYPE, ERROR_TYPE, service) {
+function baseAction(ACTION_TYPE, ERROR_TYPE, service) {
 	return function(param) {
 		return isFunction(service) ? actionData(ACTION_TYPE, service(param)) : actionData(ACTION_TYPE, param);
 	};
@@ -129,7 +139,7 @@ export function baseAction(ACTION_TYPE, ERROR_TYPE, service) {
 
 
 function getReducersConfig(config) {
-	return Array.isArray(config) ? config : config.reducers;
+	return isArray(config) ? config : config.reducers;
 }
 
 /**
@@ -139,7 +149,7 @@ function getReducersConfig(config) {
  * @param  {object}  service           用于处理action的方法集合
  * @return {object}                    action集合
  */
-export function createAction(reducersConfig, itemName, service) {
+function createAction(reducersConfig, itemName, service) {
 	service = service || {};
 
 	return reducersConfig.reduce(function(ret, reducerConfig) {
@@ -190,11 +200,11 @@ export function createAction(reducersConfig, itemName, service) {
  * @param  {object}  service   用于处理action的方法集合
  * @return {object}            action集合
  */
-export function createActions(list, service) {
+function createActions(list, service) {
 	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig)) {
+		if (isArray(reducersConfig)) {
 			return merge(ret, createAction(reducersConfig, itemName, service));
 		}
 
@@ -207,7 +217,7 @@ export function createActions(list, service) {
  * @param  {object}         json 要转换的JSON
  * @return {Immutable.Map}       转换后的Map对象
  */
-export function toMap(json) {
+function toMap(json) {
 	function setMap(source, target) {
 		for (var key in source) {
 			if (isPlainObject(source[key])) {
@@ -228,7 +238,7 @@ export function toMap(json) {
  * @param  {string}   itemName         如果没有配置reducer对应的action信息，则通过这个名称创建一个默认的action配置
  * @return {function}                  reducer函数
  */
-export function createReducer(reducersConfig, itemName) {
+function createReducer(reducersConfig, itemName) {
 	return reducersConfig.reduce(function(ret, reducerConfig) {
 		// 如果reducer没有配置name属性，则用传入的itemName做reducer的名称
 		var reducerName = reducerConfig.name || itemName;
@@ -283,11 +293,11 @@ export function createReducer(reducersConfig, itemName) {
  * @param  {array}    list           配置列表
  * @return {object}                  reducer集合
  */
-export function createReducers(list) {
+function createReducers(list) {
 	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig)) {
+		if (isArray(reducersConfig)) {
 			return merge(ret, createReducer(reducersConfig, itemName));
 		}
 
@@ -300,7 +310,7 @@ export function createReducers(list) {
  * @param  {object} reducers reducer集合
  * @return {store}
  */
-export function reducersToStore(reducers) {
+function reducersToStore(reducers) {
 	var Reducers = combineReducers(reducers);
 	var initialState = typeof window != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
 
@@ -316,11 +326,11 @@ export function reducersToStore(reducers) {
  * @param  {object}   otherReducers  可选的，额外附加的reducer函数集合
  * @return {object}                  store集合
  */
-export function createStores(list, otherReducers) {
+function createStores(list, otherReducers) {
 	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
-		if (Array.isArray(reducersConfig) && list[itemName].store !== false) {
+		if (isArray(reducersConfig) && list[itemName].store !== false) {
 			var reducers = merge(createReducer(reducersConfig, itemName), otherReducers || {});
 			ret[itemName] = reducersToStore(reducers);
 			return ret;
@@ -338,7 +348,7 @@ export function createStores(list, otherReducers) {
  * @param  {string}  stateKey   需要返回的state的key
  * @return {react}              绑定redux后的react组件
  */
-export function connectStateData(Component, propName, Actions, stateKey) {
+function connectStateData(Component, propName, Actions, stateKey) {
 	stateKey = stateKey || '__';
 	function mapStateToProps(state) {
 		var stateData = state[stateKey] || state;
@@ -351,3 +361,16 @@ export function connectStateData(Component, propName, Actions, stateKey) {
 	}
 }
 
+
+exports.isFunction = isFunction;
+exports.isPlainObject = isPlainObject;
+exports.merge = merge;
+exports.getActionType = getActionType;
+exports.createAction = createAction;
+exports.createActions = createActions;
+exports.toMap = toMap;
+exports.createReducer = createReducer;
+exports.createReducers = createReducers;
+exports.reducersToStore = reducersToStore;
+exports.createStores = createStores
+exports.connectStateData = connectStateData;
