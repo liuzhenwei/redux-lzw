@@ -372,5 +372,5 @@ exports.toMap = toMap;
 exports.createReducer = createReducer;
 exports.createReducers = createReducers;
 exports.reducersToStore = reducersToStore;
-exports.createStores = createStores
+exports.createStores = createStores;
 exports.connectStateData = connectStateData;
