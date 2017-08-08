@@ -1,7 +1,3 @@
-'use strict';
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 var redux = require('redux');
 var connect = require('react-redux').connect;
 var reduxPromise = require('redux-promise');
@@ -9,11 +5,11 @@ var Immutable = require('immutable');
 var Promise = require('es6-promise').Promise;
 
 var createStore = redux.createStore,
-    combineReducers = redux.combineReducers,
-    applyMiddleware = redux.applyMiddleware,
-    compose = redux.compose;
+	combineReducers = redux.combineReducers,
+	applyMiddleware = redux.applyMiddleware,
+	compose = redux.compose;
 var Map = Immutable.Map,
-    List = Immutable.List;
+	List = Immutable.List;
 
 function isArray(obj) {
 	return Object.prototype.toString.call(obj) === '[object Array]';
@@ -33,7 +29,7 @@ function isPlainObject(obj) {
 function merge(firstObj) {
 	function extend(target, source, deep) {
 		for (var key in source) {
-			if (deep && (isPlainObject(source[key]) || isArray(source[key]) && source[key].length > 0)) {
+			if (deep && (isPlainObject(source[key]) || (isArray(source[key]) && source[key].length > 0))) {
 				if (isPlainObject(source[key]) && !isPlainObject(target[key])) {
 					target[key] = {};
 				}
@@ -48,13 +44,12 @@ function merge(firstObj) {
 		}
 	}
 
-	var deep = true,
-	    objs = Array.prototype.slice.call(arguments, 1);
+	var deep = true, objs = Array.prototype.slice.call(arguments, 1);
 	if (typeof firstObj == 'boolean' || firstObj == 'merge') {
 		deep = firstObj;
 		firstObj = objs.shift();
 	}
-	objs.forEach(function (obj) {
+	objs.forEach(function(obj) {
 		extend(firstObj, obj, deep);
 	});
 	return firstObj;
@@ -68,7 +63,7 @@ function merge(firstObj) {
 function promiseData(source) {
 	var data = {};
 	if (isArray(source)) {
-		source.forEach(function (_data) {
+		source.forEach(function(_data) {
 			data = merge(data, _data);
 		});
 	} else {
@@ -84,9 +79,8 @@ function promiseData(source) {
  * @return {string || object}        如果returnErrorType为true，则同时返回success和error2个type名 
  */
 function getActionType(key, returnErrorType) {
-	var successType = 'action_' + key,
-	    errorType = successType + '_error';
-	return returnErrorType ? { successType: successType, errorType: errorType } : successType;
+	var successType = 'action_' + key, errorType = successType + '_error';
+	return returnErrorType ? {successType, errorType} : successType;
 }
 
 /**
@@ -96,7 +90,7 @@ function getActionType(key, returnErrorType) {
  * @return {object}
  */
 function actionData(type, data) {
-	return { type: type, data: data };
+	return {type, data};
 }
 
 /**
@@ -107,22 +101,20 @@ function actionData(type, data) {
  * @return {function}
  */
 function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
-	return function () {
-		for (var _len = arguments.length, param = Array(_len), _key = 0; _key < _len; _key++) {
-			param[_key] = arguments[_key];
-		}
-
-		var promises = isFunction(service) ? service.apply(undefined, param) : [new Promise(function (resolve) {
-			resolve({ param: param });
+	return function(...param) {
+		var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
+			resolve({param});
 		})];
 		if (!isArray(promises)) {
 			promises = [promises];
 		}
-		return new Promise(function (resolve, reject) {
-			Promise.all(promises).then(function (pageData) {
+		return new Promise(function(resolve, reject) {
+			Promise.all(promises)
+			.then(function(pageData) {
 				var data = promiseData(pageData);
 				resolve(actionData(ACTION_TYPE, data));
-			}).catch(function (error) {
+			})
+			.catch(function(error) {
 				console.error(error);
 				reject(actionData(ERROR_TYPE, error));
 			});
@@ -138,10 +130,11 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
  * @return {function}
  */
 function baseAction(ACTION_TYPE, ERROR_TYPE, service) {
-	return function (param) {
+	return function(param) {
 		return isFunction(service) ? actionData(ACTION_TYPE, service(param)) : actionData(ACTION_TYPE, param);
 	};
 }
+
 
 function getReducersConfig(config) {
 	return isArray(config) ? config : config.reducers;
@@ -157,24 +150,21 @@ function getReducersConfig(config) {
 function createAction(reducersConfig, itemName, service) {
 	service = service || {};
 
-	return reducersConfig.reduce(function (ret, reducerConfig) {
+	return reducersConfig.reduce(function(ret, reducerConfig) {
 		// 如果reducer没有配置name属性，则用传入的itemName做reducer的名称
 		var reducerName = reducerConfig.name || itemName;
 
 		// 如果没有定义actions，则创建一个默认的actions
-		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : _defineProperty({}, reducerName, {});
+		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : {[reducerName]: {}};
 
-		var actions = Object.keys(actionsConfig).reduce(function (actionRet, actionName) {
+		var actions = Object.keys(actionsConfig).reduce(function(actionRet, actionName) {
 			var actionConfig = actionsConfig[actionName] == true ? {} : actionsConfig[actionName];
 			if (!isPlainObject(actionConfig)) {
 				return actionRet;
 			}
 
 			var actionFunc = actionConfig.mode != 'base' ? asyncAction : baseAction;
-
-			var _getActionType = getActionType(actionName, true),
-			    successType = _getActionType.successType,
-			    errorType = _getActionType.errorType;
+			var {successType, errorType} = getActionType(actionName, true);
 
 			if (typeof actionConfig.type == 'string') {
 				successType = actionConfig.type;
@@ -209,7 +199,7 @@ function createAction(reducersConfig, itemName, service) {
  * @return {object}            action集合
  */
 function createActions(list, service) {
-	return Object.keys(list).reduce(function (ret, itemName) {
+	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
 		if (isArray(reducersConfig)) {
@@ -247,28 +237,22 @@ function toMap(json) {
  * @return {function}                  reducer函数
  */
 function createReducer(reducersConfig, itemName) {
-	return reducersConfig.reduce(function (ret, reducerConfig) {
+	return reducersConfig.reduce(function(ret, reducerConfig) {
 		// 如果reducer没有配置name属性，则用传入的itemName做reducer的名称
 		var reducerName = reducerConfig.name || itemName;
 
 		// 如果没有定义actions，则创建一个默认的actions
-		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : _defineProperty({}, reducerName, {});
+		var actionsConfig = isPlainObject(reducerConfig.actions) ? reducerConfig.actions : {[reducerName]: {}};
 
 		// 如果reducer配置中定义了immutable state的方法，则用定义的方法，否则使用默认的，默认的只会将object转成map，忽略array
 		var initialState = isFunction(reducerConfig.immutableState) ? reducerConfig.immutableState(reducerConfig.initialState) : toMap(reducerConfig.initialState);
 
-		ret[reducerName] = function () {
-			var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : initialState;
-			var result = arguments[1];
-
+		ret[reducerName] = function(state = initialState, result) {
 			for (var actionName in actionsConfig) {
 				var action = actionsConfig[actionName];
-
+				
 				// 获取action的type从action的name
-
-				var _getActionType2 = getActionType(actionName, true),
-				    successType = _getActionType2.successType,
-				    errorType = _getActionType2.errorType;
+				var {successType, errorType} = getActionType(actionName, true);
 
 				if (result.type == action.type || result.type == successType) {
 					// action结果的type==预先定义的type或==从name获取的type
@@ -280,7 +264,7 @@ function createReducer(reducersConfig, itemName) {
 						return state[action.merge](result.data);
 					} else {
 						// 默认merge方法
-						return state.mergeDeepWith(function (prev, next, key) {
+						return state.mergeDeepWith((prev, next, key) => {
 							if (next == undefined) {
 								return prev;
 							}
@@ -292,7 +276,7 @@ function createReducer(reducersConfig, itemName) {
 					}
 				} else if (result.type == errorType) {
 					// action结果的type==从name获取的出错type
-					return state.merge({ errorInfo: result.data });
+					return state.merge({errorInfo: result.data});
 				}
 			}
 			return state;
@@ -308,7 +292,7 @@ function createReducer(reducersConfig, itemName) {
  * @return {object}                  reducer集合
  */
 function createReducers(list) {
-	return Object.keys(list).reduce(function (ret, itemName) {
+	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
 		if (isArray(reducersConfig)) {
@@ -328,9 +312,10 @@ function reducersToStore(reducers) {
 	var Reducers = combineReducers(reducers);
 	var initialState = typeof window != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
 
-	return createStore(Reducers, initialState, compose(applyMiddleware(reduxPromise), typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : function (f) {
-		return f;
-	}));
+	return createStore(Reducers, initialState, compose(
+		applyMiddleware(reduxPromise),
+		typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : f => f
+	));
 }
 
 /**
@@ -340,7 +325,7 @@ function reducersToStore(reducers) {
  * @return {object}                  store集合
  */
 function createStores(list, otherReducers) {
-	return Object.keys(list).reduce(function (ret, itemName) {
+	return Object.keys(list).reduce(function(ret, itemName) {
 		var reducersConfig = getReducersConfig(list[itemName]);
 
 		if (isArray(reducersConfig) && list[itemName].store !== false) {
@@ -365,7 +350,7 @@ function connectStateData(Component, propName, Actions, stateKey) {
 	stateKey = stateKey || '__';
 	function mapStateToProps(state) {
 		var stateData = state[stateKey] || state;
-		return _defineProperty({}, propName, stateData);
+		return {[propName]: stateData};
 	}
 	if (isPlainObject(Actions)) {
 		return connect(mapStateToProps, Actions)(Component);
@@ -373,6 +358,7 @@ function connectStateData(Component, propName, Actions, stateKey) {
 		return connect(mapStateToProps)(Component);
 	}
 }
+
 
 exports.isFunction = isFunction;
 exports.isPlainObject = isPlainObject;
