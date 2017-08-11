@@ -11,6 +11,23 @@ var createStore = redux.createStore,
 var Map = Immutable.Map,
 	List = Immutable.List;
 
+function getPrototypeOf(object) {
+	if (!object) {
+		return null;
+	} else {
+		var proto = object.__proto__;
+		if (proto || proto === null) {
+			return proto;
+		} else if (Object.prototype.toString.call(object.constructor) === '[object Function]') {
+			return object.constructor.prototype;
+		} else if (object instanceof Object) {
+			return Object.prototype;
+		} else {
+			return null;
+		}
+	}
+}
+
 function isArray(obj) {
 	return Object.prototype.toString.call(obj) === '[object Array]';
 }
@@ -18,7 +35,7 @@ function isFunction(obj) {
 	return Object.prototype.toString.call(obj) === '[object Function]';
 }
 function isPlainObject(obj) {
-	return Object.prototype.toString.call(obj) === '[object Object]' && Object.getPrototypeOf(obj) == Object.prototype;
+	return Object.prototype.toString.call(obj) === '[object Object]' && getPrototypeOf(obj) == Object.prototype;
 }
 
 /**
@@ -113,8 +130,7 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 			.then(function(pageData) {
 				var data = promiseData(pageData);
 				resolve(actionData(ACTION_TYPE, data));
-			})
-			.catch(function(error) {
+			})['catch'](function(error) {
 				console.error(error);
 				reject(actionData(ERROR_TYPE, error));
 			});
