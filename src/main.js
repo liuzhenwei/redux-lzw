@@ -152,10 +152,10 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 			Promise.all(promises)
 			.then(function(pageData) {
 				var data = promiseData(pageData);
-				resolve(null, actionData(ACTION_TYPE, data));
+				resolve(actionData(ACTION_TYPE, data));
 			})['catch'](function(error) {
 				console.error(error);
-				resolve(error, actionData(ERROR_TYPE, {}));
+				reject(actionData(ERROR_TYPE, {error}));
 			});
 		});
 	};
