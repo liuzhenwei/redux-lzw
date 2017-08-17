@@ -142,22 +142,34 @@ function actionData(type, data) {
  */
 function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 	return function(...param) {
-		var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
-			resolve({param});
-		})];
-		if (!isArray(promises)) {
-			promises = [promises];
-		}
-		return new Promise(function(resolve, reject) {
-			Promise.all(promises)
-			.then(function(pageData) {
-				var data = promiseData(pageData);
-				resolve(actionData(ACTION_TYPE, data));
-			})['catch'](function(error) {
-				console.error(error);
-				reject(actionData(ERROR_TYPE, {error}));
+		return function(dispath) {
+			var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
+				resolve({param});
+			})];
+			if (!isArray(promises)) {
+				promises = [promises];
+			}
+
+			var result = new Promise(function(resolve, reject) {
+				Promise.all(promises)
+				.then(function(pageData) {
+					var data = promiseData(pageData);
+					dispath(actionData(ACTION_TYPE, data));
+					resolve(data);
+				})['catch'](function(error) {
+					dispath(actionData(ERROR_TYPE, {error}));
+					reject(error);
+				});
 			});
-		});
+
+			return function(callback) {
+				result.then(function(data) {
+					callback(null, data);
+				})['catch'](function(error) {
+					callback(error);
+				});
+			};
+		};
 	};
 }
 

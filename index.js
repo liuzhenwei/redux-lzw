@@ -164,21 +164,33 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 			param[_key] = arguments[_key];
 		}
 
-		var promises = isFunction(service) ? service.apply(undefined, param) : [new _es6Promise.Promise(function (resolve) {
-			resolve({ param: param });
-		})];
-		if (!isArray(promises)) {
-			promises = [promises];
-		}
-		return new _es6Promise.Promise(function (resolve, reject) {
-			_es6Promise.Promise.all(promises).then(function (pageData) {
-				var data = promiseData(pageData);
-				resolve(actionData(ACTION_TYPE, data));
-			})['catch'](function (error) {
-				console.error(error);
-				reject(actionData(ERROR_TYPE, { error: error }));
+		return function (dispath) {
+			var promises = isFunction(service) ? service.apply(undefined, param) : [new _es6Promise.Promise(function (resolve) {
+				resolve({ param: param });
+			})];
+			if (!isArray(promises)) {
+				promises = [promises];
+			}
+
+			var result = new _es6Promise.Promise(function (resolve, reject) {
+				_es6Promise.Promise.all(promises).then(function (pageData) {
+					var data = promiseData(pageData);
+					dispath(actionData(ACTION_TYPE, data));
+					resolve(data);
+				})['catch'](function (error) {
+					dispath(actionData(ERROR_TYPE, { error: error }));
+					reject(error);
+				});
 			});
-		});
+
+			return function (callback) {
+				result.then(function (data) {
+					callback(null, data);
+				})['catch'](function (error) {
+					callback(error);
+				});
+			};
+		};
 	};
 }
 
