@@ -1,19 +1,54 @@
 'use strict';
 
+var _redux = require('redux');
+
+var _reactRedux = require('react-redux');
+
+var _reduxThunk = require('redux-thunk');
+
+var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
+
+var _reduxPromise = require('redux-promise');
+
+var _reduxPromise2 = _interopRequireDefault(_reduxPromise);
+
+var _immutable = require('immutable');
+
+var _immutable2 = _interopRequireDefault(_immutable);
+
+var _es6Promise = require('es6-promise');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var redux = require('redux');
-var connect = require('react-redux').connect;
-var reduxPromise = require('redux-promise');
-var Immutable = require('immutable');
-var Promise = require('es6-promise').Promise;
+// var redux = require('redux');
+// var connect = require('react-redux').connect;
+// var reduxPromise = require('redux-promise');
+// var reduxThunk = require('redux-thunk');
+// var Immutable = require('immutable');
+// var Promise = require('es6-promise').Promise;
 
-var createStore = redux.createStore,
-    combineReducers = redux.combineReducers,
-    applyMiddleware = redux.applyMiddleware,
-    compose = redux.compose;
-var Map = Immutable.Map,
-    List = Immutable.List;
+// var createStore = redux.createStore,
+// 	combineReducers = redux.combineReducers,
+// 	applyMiddleware = redux.applyMiddleware,
+// 	compose = redux.compose;
+// var Map = Immutable.Map,
+// 	List = Immutable.List;
+
+exports.isArray = isArray;
+exports.isFunction = isFunction;
+exports.isPlainObject = isPlainObject;
+exports.merge = merge;
+exports.getActionType = getActionType;
+exports.createAction = createAction;
+exports.createActions = createActions;
+exports.toMap = toMap;
+exports.createReducer = createReducer;
+exports.createReducers = createReducers;
+exports.reducersToStore = reducersToStore;
+exports.createStores = createStores;
+exports.connectStateData = connectStateData;
 
 function getPrototypeOf(object) {
 	if (!object) {
@@ -129,14 +164,40 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 			param[_key] = arguments[_key];
 		}
 
-		var promises = isFunction(service) ? service.apply(undefined, param) : [new Promise(function (resolve) {
+		return function (dispatch) {
+			var promises = isFunction(service) ? service.apply(undefined, param) : [new _es6Promise.Promise(function (resolve) {
+				resolve({ param: param });
+			})];
+			if (!isArray(promises)) {
+				promises = [promises];
+			}
+			_es6Promise.Promise.all(promises).then(function (pageData) {
+				var data = promiseData(pageData);
+				dispatch(actionData(ACTION_TYPE, promiseData(pageData)));
+				return data;
+			}).catch(function (error) {
+				console.error(error);
+				dispatch(actionData(ERROR_TYPE, error));
+				return error;
+			});
+		};
+	};
+}
+
+function promiseAction(ACTION_TYPE, ERROR_TYPE, service) {
+	return function () {
+		for (var _len2 = arguments.length, param = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			param[_key2] = arguments[_key2];
+		}
+
+		var promises = isFunction(service) ? service.apply(undefined, param) : [new _es6Promise.Promise(function (resolve) {
 			resolve({ param: param });
 		})];
 		if (!isArray(promises)) {
 			promises = [promises];
 		}
-		return new Promise(function (resolve, reject) {
-			Promise.all(promises).then(function (pageData) {
+		return new _es6Promise.Promise(function (resolve, reject) {
+			_es6Promise.Promise.all(promises).then(function (pageData) {
 				var data = promiseData(pageData);
 				resolve(actionData(ACTION_TYPE, data));
 			})['catch'](function (error) {
@@ -246,7 +307,7 @@ function toMap(json) {
 	function setMap(source, target) {
 		for (var key in source) {
 			if (isPlainObject(source[key])) {
-				target[key] = Map(setMap(source[key], {}));
+				target[key] = (0, _immutable.Map)(setMap(source[key], {}));
 			} else {
 				target[key] = source[key];
 			}
@@ -254,7 +315,7 @@ function toMap(json) {
 		return target;
 	}
 
-	return Map(setMap(json, {}));
+	return (0, _immutable.Map)(setMap(json, {}));
 }
 
 /**
@@ -301,7 +362,7 @@ function createReducer(reduxConfig, itemName) {
 							if (next == undefined) {
 								return prev;
 							}
-							if (List.isList(next)) {
+							if (_immutable.List.isList(next)) {
 								return next.toJSON();
 							}
 							return next;
@@ -342,10 +403,10 @@ function createReducers(list) {
  * @return {store}
  */
 function reducersToStore(reducers) {
-	var Reducers = combineReducers(reducers);
+	var Reducers = (0, _redux.combineReducers)(reducers);
 	var initialState = typeof window != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
 
-	return createStore(Reducers, initialState, compose(applyMiddleware(reduxPromise), typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : function (f) {
+	return (0, _redux.createStore)(Reducers, initialState, (0, _redux.compose)((0, _redux.applyMiddleware)(_reduxThunk2.default, _reduxPromise2.default), typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : function (f) {
 		return f;
 	}));
 }
@@ -385,21 +446,8 @@ function connectStateData(Component, propName, Actions, stateKey) {
 		return _defineProperty({}, propName, stateData);
 	}
 	if (isPlainObject(Actions)) {
-		return connect(mapStateToProps, Actions)(Component);
+		return (0, _reactRedux.connect)(mapStateToProps, Actions)(Component);
 	} else {
-		return connect(mapStateToProps)(Component);
+		return (0, _reactRedux.connect)(mapStateToProps)(Component);
 	}
 }
-
-exports.isFunction = isFunction;
-exports.isPlainObject = isPlainObject;
-exports.merge = merge;
-exports.getActionType = getActionType;
-exports.createAction = createAction;
-exports.createActions = createActions;
-exports.toMap = toMap;
-exports.createReducer = createReducer;
-exports.createReducers = createReducers;
-exports.reducersToStore = reducersToStore;
-exports.createStores = createStores;
-exports.connectStateData = connectStateData;

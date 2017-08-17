@@ -1,15 +1,38 @@
-var redux = require('redux');
-var connect = require('react-redux').connect;
-var reduxPromise = require('redux-promise');
-var Immutable = require('immutable');
-var Promise = require('es6-promise').Promise;
+import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
+import {connect} from 'react-redux';
+import reduxThunk from 'redux-thunk';
+import reduxPromise from 'redux-promise';
+import Immutable, {Map, List} from 'immutable';
+import {Promise} from 'es6-promise';
 
-var createStore = redux.createStore,
-	combineReducers = redux.combineReducers,
-	applyMiddleware = redux.applyMiddleware,
-	compose = redux.compose;
-var Map = Immutable.Map,
-	List = Immutable.List;
+// var redux = require('redux');
+// var connect = require('react-redux').connect;
+// var reduxPromise = require('redux-promise');
+// var reduxThunk = require('redux-thunk');
+// var Immutable = require('immutable');
+// var Promise = require('es6-promise').Promise;
+
+// var createStore = redux.createStore,
+// 	combineReducers = redux.combineReducers,
+// 	applyMiddleware = redux.applyMiddleware,
+// 	compose = redux.compose;
+// var Map = Immutable.Map,
+// 	List = Immutable.List;
+
+exports.isArray = isArray;
+exports.isFunction = isFunction;
+exports.isPlainObject = isPlainObject;
+exports.merge = merge;
+exports.getActionType = getActionType;
+exports.createAction = createAction;
+exports.createActions = createActions;
+exports.toMap = toMap;
+exports.createReducer = createReducer;
+exports.createReducers = createReducers;
+exports.reducersToStore = reducersToStore;
+exports.createStores = createStores;
+exports.connectStateData = connectStateData;
+
 
 function getPrototypeOf(object) {
 	if (!object) {
@@ -118,6 +141,30 @@ function actionData(type, data) {
  * @return {function}
  */
 function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
+	return function(...param) {
+		return function(dispatch) {
+			var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
+				resolve({param});
+			})];
+			if (!isArray(promises)) {
+				promises = [promises];
+			}
+			Promise.all(promises)
+			.then(function(pageData){
+				var data = promiseData(pageData);
+				dispatch(actionData(ACTION_TYPE, promiseData(pageData)));
+				return data;
+			})
+			.catch(function(error){
+				console.error(error);
+				dispatch(actionData(ERROR_TYPE, error));
+				return error;
+			});
+		};
+	};
+}
+
+function promiseAction(ACTION_TYPE, ERROR_TYPE, service) {
 	return function(...param) {
 		var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
 			resolve({param});
@@ -329,7 +376,7 @@ function reducersToStore(reducers) {
 	var initialState = typeof window != 'undefined' ? window.__INITIAL_STATE__ || {} : {};
 
 	return createStore(Reducers, initialState, compose(
-		applyMiddleware(reduxPromise),
+		applyMiddleware(reduxThunk, reduxPromise),
 		typeof window != 'undefined' && window.devToolsExtension ? window.devToolsExtension() : f => f
 	));
 }
@@ -375,16 +422,3 @@ function connectStateData(Component, propName, Actions, stateKey) {
 	}
 }
 
-
-exports.isFunction = isFunction;
-exports.isPlainObject = isPlainObject;
-exports.merge = merge;
-exports.getActionType = getActionType;
-exports.createAction = createAction;
-exports.createActions = createActions;
-exports.toMap = toMap;
-exports.createReducer = createReducer;
-exports.createReducers = createReducers;
-exports.reducersToStore = reducersToStore;
-exports.createStores = createStores;
-exports.connectStateData = connectStateData;
