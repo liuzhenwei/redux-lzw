@@ -160,21 +160,21 @@ function baseAction(ACTION_TYPE, ERROR_TYPE, service) {
 	};
 }
 
-function getReducersConfig(config) {
-	return isArray(config) ? config : config.reducers;
+function getReduxConfig(config) {
+	return isArray(config) ? config : config.reduxConfig;
 }
 
 /**
  * 通过一个reducer配置创建出action
- * @param  {array}   reducersConfig    reducer配置列表
+ * @param  {array}   reduxConfig       redux配置列表
  * @param  {string}  itemName          如果没有配置reducer对应的action信息，则通过这个名称创建一个默认的action配置
  * @param  {object}  service           用于处理action的方法集合
  * @return {object}                    action集合
  */
-function createAction(reducersConfig, itemName, service) {
+function createAction(reduxConfig, itemName, service) {
 	service = service || {};
 
-	return reducersConfig.reduce(function (ret, reducerConfig) {
+	return reduxConfig.reduce(function (ret, reducerConfig) {
 		// 如果reducer没有配置name属性，则用传入的itemName做reducer的名称
 		var reducerName = reducerConfig.name || itemName;
 
@@ -227,10 +227,10 @@ function createAction(reducersConfig, itemName, service) {
  */
 function createActions(list, service) {
 	return Object.keys(list).reduce(function (ret, itemName) {
-		var reducersConfig = getReducersConfig(list[itemName]);
+		var reduxConfig = getReduxConfig(list[itemName]);
 
-		if (isArray(reducersConfig)) {
-			return merge(ret, createAction(reducersConfig, itemName, service));
+		if (isArray(reduxConfig)) {
+			return merge(ret, createAction(reduxConfig, itemName, service));
 		}
 
 		return ret;
@@ -239,8 +239,8 @@ function createActions(list, service) {
 
 /**
  * 将一个JSON对象转换为一个Immutable对象，但只转换object，不转换array
- * @param  {object}         json 要转换的JSON
- * @return {Immutable.Map}       转换后的Map对象
+ * @param  {object}         json    要转换的JSON
+ * @return {Immutable.Map}          转换后的Map对象
  */
 function toMap(json) {
 	function setMap(source, target) {
@@ -259,12 +259,12 @@ function toMap(json) {
 
 /**
  * 通过一个reducer配置，创建一个reducer函数
- * @param  {array}    reducersConfig   reducers配置信息
+ * @param  {array}    reduxConfig      redux配置信息
  * @param  {string}   itemName         如果没有配置reducer对应的action信息，则通过这个名称创建一个默认的action配置
  * @return {function}                  reducer函数
  */
-function createReducer(reducersConfig, itemName) {
-	return reducersConfig.reduce(function (ret, reducerConfig) {
+function createReducer(reduxConfig, itemName) {
+	return reduxConfig.reduce(function (ret, reducerConfig) {
 		// 如果reducer没有配置name属性，则用传入的itemName做reducer的名称
 		var reducerName = reducerConfig.name || itemName;
 
@@ -326,10 +326,10 @@ function createReducer(reducersConfig, itemName) {
  */
 function createReducers(list) {
 	return Object.keys(list).reduce(function (ret, itemName) {
-		var reducersConfig = getReducersConfig(list[itemName]);
+		var reduxConfig = getReduxConfig(list[itemName]);
 
-		if (isArray(reducersConfig)) {
-			return merge(ret, createReducer(reducersConfig, itemName));
+		if (isArray(reduxConfig)) {
+			return merge(ret, createReducer(reduxConfig, itemName));
 		}
 
 		return ret;
@@ -358,10 +358,10 @@ function reducersToStore(reducers) {
  */
 function createStores(list, otherReducers) {
 	return Object.keys(list).reduce(function (ret, itemName) {
-		var reducersConfig = getReducersConfig(list[itemName]);
+		var reduxConfig = getReduxConfig(list[itemName]);
 
-		if (isArray(reducersConfig) && list[itemName].store !== false) {
-			var reducers = merge(createReducer(reducersConfig, itemName), otherReducers || {});
+		if (isArray(reduxConfig) && list[itemName].store !== false) {
+			var reducers = merge(createReducer(reduxConfig, itemName), otherReducers || {});
 			ret[itemName] = reducersToStore(reducers);
 			return ret;
 		}
