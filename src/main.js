@@ -142,30 +142,6 @@ function actionData(type, data) {
  */
 function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 	return function(...param) {
-		return function(dispatch) {
-			var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
-				resolve({param});
-			})];
-			if (!isArray(promises)) {
-				promises = [promises];
-			}
-			Promise.all(promises)
-			.then(function(pageData){
-				var data = promiseData(pageData);
-				dispatch(actionData(ACTION_TYPE, promiseData(pageData)));
-				return data;
-			})
-			.catch(function(error){
-				console.error(error);
-				dispatch(actionData(ERROR_TYPE, error));
-				return error;
-			});
-		};
-	};
-}
-
-function promiseAction(ACTION_TYPE, ERROR_TYPE, service) {
-	return function(...param) {
 		var promises = isFunction(service) ? service(...param) : [new Promise(function(resolve) {
 			resolve({param});
 		})];
@@ -176,10 +152,10 @@ function promiseAction(ACTION_TYPE, ERROR_TYPE, service) {
 			Promise.all(promises)
 			.then(function(pageData) {
 				var data = promiseData(pageData);
-				resolve(actionData(ACTION_TYPE, data));
+				resolve(null, actionData(ACTION_TYPE, data));
 			})['catch'](function(error) {
 				console.error(error);
-				reject(actionData(ERROR_TYPE, error));
+				resolve(error, actionData(ERROR_TYPE, {}));
 			});
 		});
 	};

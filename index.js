@@ -164,32 +164,6 @@ function asyncAction(ACTION_TYPE, ERROR_TYPE, service) {
 			param[_key] = arguments[_key];
 		}
 
-		return function (dispatch) {
-			var promises = isFunction(service) ? service.apply(undefined, param) : [new _es6Promise.Promise(function (resolve) {
-				resolve({ param: param });
-			})];
-			if (!isArray(promises)) {
-				promises = [promises];
-			}
-			_es6Promise.Promise.all(promises).then(function (pageData) {
-				var data = promiseData(pageData);
-				dispatch(actionData(ACTION_TYPE, promiseData(pageData)));
-				return data;
-			}).catch(function (error) {
-				console.error(error);
-				dispatch(actionData(ERROR_TYPE, error));
-				return error;
-			});
-		};
-	};
-}
-
-function promiseAction(ACTION_TYPE, ERROR_TYPE, service) {
-	return function () {
-		for (var _len2 = arguments.length, param = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-			param[_key2] = arguments[_key2];
-		}
-
 		var promises = isFunction(service) ? service.apply(undefined, param) : [new _es6Promise.Promise(function (resolve) {
 			resolve({ param: param });
 		})];
@@ -199,10 +173,10 @@ function promiseAction(ACTION_TYPE, ERROR_TYPE, service) {
 		return new _es6Promise.Promise(function (resolve, reject) {
 			_es6Promise.Promise.all(promises).then(function (pageData) {
 				var data = promiseData(pageData);
-				resolve(actionData(ACTION_TYPE, data));
+				resolve(null, actionData(ACTION_TYPE, data));
 			})['catch'](function (error) {
 				console.error(error);
-				reject(actionData(ERROR_TYPE, error));
+				resolve(error, actionData(ERROR_TYPE, {}));
 			});
 		});
 	};
