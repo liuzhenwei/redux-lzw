@@ -323,7 +323,7 @@ function createReducer(reduxConfig, itemName) {
 								return next.toJSON();
 							}
 							return next;
-						}, result.data);
+						}, toMap(result.data));
 					}
 				} else if (result.type == errorType) {
 					// action结果的type==从name获取的出错type
